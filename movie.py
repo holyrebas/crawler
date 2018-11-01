@@ -1,31 +1,17 @@
-from urllib.request import urlopen
+import re
 import urllib.error
-from bs4 import BeautifulSoup
+from urllib.request import urlopen
 from multiprocessing import Process
 from multiprocessing import Manager
-import re
+from bs4 import BeautifulSoup
 
 
 def get_rotten(title, year, ret):
-    if ":_" in title:
-        title = title.replace(":_", "_")
-    if "_:_" in title:
-        title = title.replace("_:_", "_")
-    if "_-_" in title:
-        title = title.replace("_-_", "_")
-    if ",_" in title:
-        title = title.replace(",_", "_")
-    if "'" in title:
-        title = title.replace("'", "")
-    if "." in title:
-        title = title.replace(".", "")
-    if "~" in title:
-        title = title.replace("~", "")
-    url = ["https://www.rottentomatoes.com/m/" + title,
+    urls = ["https://www.rottentomatoes.com/m/" + title,
            "https://www.rottentomatoes.com/m/" + title + "_" + str(year)]
-    for i in range(2):
+    for url in urls:
         try:
-            html = urlopen(url[i])
+            html = urlopen(url)
         except urllib.error.HTTPError as e:
             pass
         except UnicodeEncodeError as f:
@@ -89,6 +75,8 @@ def get_movie(key):
     imdb_page = BeautifulSoup(html, "html.parser")
     for movie in imdb_page.findAll("div", {"class": "lister-item"}):
         title = movie.find("img", {"class": "loadlate"})
+        titles = re.sub('[.,`\'!?~\-_+:;]', '', title['alt'])
+        titles = titles.replace("  ", " ")
         year = movie.find("span", {"class": "lister-item-year"})
         grade = movie.find("span", {"class": "certificate"})
         runtime = movie.find("span", {"class": "runtime"})
@@ -102,9 +90,9 @@ def get_movie(key):
             manager = Manager()
             ret = manager.dict()
             procs = []
-            procs.append(Process(target=get_rotten, args=(title['alt'].replace(" ", "_"), year.get_text()[1:5], ret)))
-            procs.append(Process(target=get_naver, args=(title['alt'].replace(" ", "+"), year.get_text()[1:5], ret)))
-            procs.append(Process(target=get_watcha, args=(title['alt'].replace(" ", "+"), year.get_text()[1:5], ret)))
+            procs.append(Process(target=get_rotten, args=(titles.replace(" ", "_"), year.get_text()[1:5], ret)))
+            procs.append(Process(target=get_naver, args=(titles.replace(" ", "+"), year.get_text()[1:5], ret)))
+            procs.append(Process(target=get_watcha, args=(titles.replace(" ", "+"), year.get_text()[1:5], ret)))
             for p in procs:
                 p.start()
             for p in procs:
@@ -132,8 +120,8 @@ def get_movie(key):
             if rating: print(" + IMDb: " + rating.get_text())
             if metascore: print(" + Meta: " + metascore.get_text().strip())
             if ret.get('rotten'): print(ret['rotten'])
-            if ret.get('naver'): print(ret['naver'])
-            if ret.get('watcha'): print(ret['watcha'])
+            if ret.get('naver') and "0.00" not in ret['naver']: print(ret['naver'])
+            if ret.get('watcha') and "0.0" not in ret['watcha']: print(ret['watcha'])
 
             cnt += 1
             print()
