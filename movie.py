@@ -34,7 +34,7 @@ def get_rotten(title, year, ret):
             rotten = BeautifulSoup(html, "html.parser")
             tomato = rotten.find("span", {"class": "meter-value"})
             if tomato:
-                ret['rotten'] = " ▪ Tomato: " + tomato.get_text()
+                ret['rotten'] = " + Tomato: " + tomato.get_text()
                 return
 
 
@@ -52,7 +52,7 @@ def get_naver(title, year, ret):
                 if y.get_text() == year:
                     star = naver.find("em", {"class": "num"})
                     if star:
-                        ret['naver'] = " ▪ Naver: " + star.get_text()
+                        ret['naver'] = " + Naver: " + star.get_text()
                         return
 
 
@@ -78,7 +78,7 @@ def get_watcha(title, year, ret):
                     else:
                         next_page = BeautifulSoup(next_html, "html.parser")
                         star = next_page.find("div", {"class": "ContentJumbotron__ContentRatings-yf8npk-16"})
-                        ret['watcha'] = " ▪ Watcha: " + star.get_text()[4:7]
+                        ret['watcha'] = " + Watcha: " + star.get_text()[4:7]
                         return
 
 
@@ -129,8 +129,8 @@ def get_movie(key):
                     else:
                         print(act[i].get_text() + " ]")
 
-            if rating: print(" ▪ IMDb: " + rating.get_text())
-            if metascore: print(" ▪ Meta: " + metascore.get_text().strip())
+            if rating: print(" + IMDb: " + rating.get_text())
+            if metascore: print(" + Meta: " + metascore.get_text().strip())
             if ret.get('rotten'): print(ret['rotten'])
             if ret.get('naver'): print(ret['naver'])
             if ret.get('watcha'): print(ret['watcha'])
