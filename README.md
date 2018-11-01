@@ -2,7 +2,7 @@
 
 * This project is a Python code for crawling movie rating.
 * You can search movies: Type keyword in English.
-* You can see information of movies.
+* You can see information of the movies.
   - Title (Released Year)
   - [ Grade | Running Time | Genres ]
   - [ Directors | Stars ]
