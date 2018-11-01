@@ -7,14 +7,13 @@ from bs4 import BeautifulSoup
 
 
 def get_rotten(title, year, ret):
-    urls = ["https://www.rottentomatoes.com/m/" + title,
-           "https://www.rottentomatoes.com/m/" + title + "_" + str(year)]
+    urls = ["https://www.rottentomatoes.com/m/" + title, "https://www.rottentomatoes.com/m/" + title + "_" + str(year)]
     for url in urls:
         try:
             html = urlopen(url)
-        except urllib.error.HTTPError as e:
+        except urllib.error.HTTPError:
             pass
-        except UnicodeEncodeError as f:
+        except UnicodeEncodeError:
             pass
         else:
             rotten = BeautifulSoup(html, "html.parser")
@@ -27,14 +26,14 @@ def get_rotten(title, year, ret):
 def get_naver(title, year, ret):
     try:
         html = urlopen("https://movie.naver.com/movie/search/result.nhn?section=movie&query=" + title)
-    except urllib.error.HTTPError as e:
+    except urllib.error.HTTPError:
         pass
-    except UnicodeEncodeError as f:
+    except UnicodeEncodeError:
         pass
     else:
         naver_page = BeautifulSoup(html, "html.parser")
-        for naver in naver_page.findAll("dl"):
-            for y in naver.findAll("a"):
+        for naver in naver_page.find_all("dl"):
+            for y in naver.find_all("a"):
                 if y.get_text() == year:
                     star = naver.find("em", {"class": "num"})
                     if star:
@@ -45,13 +44,13 @@ def get_naver(title, year, ret):
 def get_watcha(title, year, ret):
     try:
         html = urlopen("https://watcha.com/search?query=" + title)
-    except urllib.error.HTTPError as e:
+    except urllib.error.HTTPError:
         pass
-    except UnicodeEncodeError as f:
+    except UnicodeEncodeError:
         pass
     else:
         watcha_page = BeautifulSoup(html, "html.parser")
-        for watcha in watcha_page.findAll("li", {"class":"StackableListItem-s18nuw36-0"}):
+        for watcha in watcha_page.find_all("li", {"class": "StackableListItem-s18nuw36-0"}):
             y = watcha.find("div",{"class": "SearchResultItemForContent__ResultExtraInfo-s1phcxqf-0"})
             if y:
                 if str(year) in y.get_text():
@@ -59,7 +58,7 @@ def get_watcha(title, year, ret):
                         'href']
                     try:
                         next_html = urlopen("https://watcha.com/ko-KR/" + next_link)
-                    except urllib.error.HTTPError as e:
+                    except urllib.error.HTTPError:
                         pass
                     else:
                         next_page = BeautifulSoup(next_html, "html.parser")
@@ -70,26 +69,27 @@ def get_watcha(title, year, ret):
 
 def get_movie(key):
     cnt = 0
-    html = urlopen("https://www.imdb.com/search/title?title="+key+"&title_type=feature")
+    html = urlopen("https://www.imdb.com/search/title?title=" + key + "&title_type=feature")
     print("# Now Loading...\n")
     imdb_page = BeautifulSoup(html, "html.parser")
-    for movie in imdb_page.findAll("div", {"class": "lister-item"}):
+    for movie in imdb_page.find_all("div", {"class": "lister-item"}):
         title = movie.find("img", {"class": "loadlate"})
-        titles = re.sub('[.,`\'!?~\-_+:;]', '', title['alt'])
+        titles = title['alt'].replace("-", " ")
+        titles = re.sub('[.,`\'!?~\-_+:;]', '', titles)
         titles = titles.replace("  ", " ")
         year = movie.find("span", {"class": "lister-item-year"})
         grade = movie.find("span", {"class": "certificate"})
         runtime = movie.find("span", {"class": "runtime"})
         genre = movie.find("span", {"class": "genre"})
-        direct = movie.findAll("a", href=re.compile("li_dr"))
-        act = movie.findAll("a", href=re.compile("li_st"))
+        direct = movie.find_all("a", href=re.compile("li_dr"))
+        act = movie.find_all("a", href=re.compile("li_st"))
         rating = movie.find("strong")
         metascore = movie.find("span", {"class": "metascore"})
 
         if year and grade and runtime and genre:
             manager = Manager()
             ret = manager.dict()
-            procs = []
+            procs = list()
             procs.append(Process(target=get_rotten, args=(titles.replace(" ", "_"), year.get_text()[1:5], ret)))
             procs.append(Process(target=get_naver, args=(titles.replace(" ", "+"), year.get_text()[1:5], ret)))
             procs.append(Process(target=get_watcha, args=(titles.replace(" ", "+"), year.get_text()[1:5], ret)))
@@ -117,11 +117,16 @@ def get_movie(key):
                     else:
                         print(act[i].get_text() + " ]")
 
-            if rating: print(" + IMDb: " + rating.get_text())
-            if metascore: print(" + Meta: " + metascore.get_text().strip())
-            if ret.get('rotten'): print(ret['rotten'])
-            if ret.get('naver') and "0.00" not in ret['naver']: print(ret['naver'])
-            if ret.get('watcha') and "0.0" not in ret['watcha']: print(ret['watcha'])
+            if rating:
+                print(" + IMDb: " + rating.get_text())
+            if metascore:
+                print(" + Meta: " + metascore.get_text().strip())
+            if ret.get('rotten'):
+                print(ret['rotten'])
+            if ret.get('naver') and "0.00" not in ret['naver']:
+                print(ret['naver'])
+            if ret.get('watcha') and "0.0" not in ret['watcha']:
+                print(ret['watcha'])
 
             cnt += 1
             print()
@@ -129,13 +134,18 @@ def get_movie(key):
     return cnt
 
 
-keyword = input("# Input Keywords: ")
-print("# Searching [ " + keyword + " ]")
-result = get_movie(keyword.replace(" ", "+"))
+def main():
+    keyword = input("# Input Keywords: ")
+    print("# Searching [ " + keyword + " ]")
+    result = get_movie(keyword.replace(" ", "+"))
 
-if result == 0:
-    print("# Not founded.")
-elif result == 1:
-    print("# 1 movie founded.")
-else:
-    print("#", result , "movies founded.")
+    if result == 0:
+        print("# Not founded.")
+    elif result == 1:
+        print("# 1 movie founded.")
+    else:
+        print("#", result, "movies founded.")
+
+
+if __name__ == "__main__":
+    main()
