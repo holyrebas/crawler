@@ -129,7 +129,7 @@ def get_movie(key):
     return cnt
 
 
-keyword = input()
+keyword = input("# Input Keywords: ")
 print("# Searching [ " + keyword + " ]")
 result = get_movie(keyword.replace(" ", "+"))
 
